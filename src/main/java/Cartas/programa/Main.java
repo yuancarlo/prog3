@@ -1,6 +1,6 @@
-package Practico1.programa;
+package Cartas.programa;
 
-import Practico1.servicio.Barajista;
+import Cartas.servicio.Barajista;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

@@ -1,4 +1,4 @@
-package Practico1.modelo;
+package Cartas.modelo;
 
 public enum Palo {
     CORAZON,

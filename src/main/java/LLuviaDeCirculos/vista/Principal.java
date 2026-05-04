@@ -1,6 +1,6 @@
-package Practico2.vista;
+package LLuviaDeCirculos.vista;
 
-import Practico2.modelo.Espacio;
+import LLuviaDeCirculos.modelo.Espacio;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

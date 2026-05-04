@@ -1,4 +1,4 @@
-package Practico1.modelo;
+package Cartas.modelo;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

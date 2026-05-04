@@ -1,4 +1,4 @@
-package Practico2.modelo;
+package LLuviaDeCirculos.modelo;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
