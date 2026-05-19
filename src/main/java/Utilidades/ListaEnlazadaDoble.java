@@ -1,6 +1,8 @@
 package Utilidades;
 
-public class ListaEnlazadaDoble<G>{
+import java.util.Iterator;
+
+public class ListaEnlazadaDoble<G> implements Iterable<G>{
     private Nodo<G> primero;
     private Nodo<G> ultimo;
     private int tamano;
@@ -30,6 +32,26 @@ public class ListaEnlazadaDoble<G>{
             primero = nuevo;
         }
         tamano++;
+    }
+
+    public G getValorPorIndice(int indice) {
+    
+        if (indice < 0) {
+            return null; 
+        }
+
+        Nodo<G> actual = primero;
+        int contador = 0;
+
+        while (actual != null) {
+            if (contador == indice) {
+                return actual.getContenido(); 
+            }
+        
+            contador++;
+            actual = actual.siguiente;
+        }
+        return null; 
     }
 
 
@@ -105,6 +127,11 @@ public class ListaEnlazadaDoble<G>{
     public void setUltimo(Nodo<G> ultimo) {
         this.ultimo = ultimo;
     }
+    
+    @Override
+    public Iterator<G> iterator() {
+        return new IteradorLista(this);
+    }
 
     private static class Nodo<G> {
         private G contenido;
@@ -144,4 +171,27 @@ public class ListaEnlazadaDoble<G>{
             return "[" + contenido.toString() + "] <-> ";
         }
     }
+
+    private static class IteradorLista<G> implements Iterator<G> {
+
+        private Nodo<G> actual;
+
+        public IteradorLista(ListaEnlazadaDoble<G> lista) {
+            actual = lista.getPrimero();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return actual != null;
+        }
+
+        @Override
+        public G next() {
+            G o = actual.getContenido();
+            actual = actual.getSiguiente();
+            return o;
+        }
+    }
+
+    
 }

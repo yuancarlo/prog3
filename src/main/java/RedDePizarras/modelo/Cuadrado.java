@@ -1,4 +1,4 @@
-package RedDePizarras.Modelo;
+package RedDePizarras.modelo;
 
 import java.awt.*;
 import java.beans.PropertyChangeSupport;
@@ -13,6 +13,7 @@ public class Cuadrado extends Figura{
         this.lado = lado;
         this.observado = new PropertyChangeSupport(this);
         seleccionada = false;
+        //logger.info("Instanciado nuevo Cuadrado - Esquina: (" + x + "," + y + "), Lado: " + lado);
     }
 
     public int getLado() {

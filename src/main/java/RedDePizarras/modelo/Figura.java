@@ -1,10 +1,15 @@
-package RedDePizarras.Modelo;
+package RedDePizarras.modelo;
 
 import java.awt.*;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+
 public abstract class Figura {
+    protected static final Logger logger = LogManager.getRootLogger();
     protected  int x;
     protected  int y;
     protected Color color;
@@ -22,7 +27,6 @@ public abstract class Figura {
     }
 
     public void setSeleccionado() {
-        seleccionada = true;
         observado.firePropertyChange("FIGURA", true, false);
     }
 

@@ -1,4 +1,4 @@
-package RedDePizarras.Modelo;
+package RedDePizarras.modelo;
 
 import java.awt.*;
 import java.beans.PropertyChangeSupport;
@@ -13,6 +13,7 @@ public class Circulo extends Figura{
         this.observado = new PropertyChangeSupport(this);
         this.radio = radio;
         this.seleccionada = false;
+        //logger.info("Instanciado nuevo Círculo - Centro: (" + x + "," + y + "), Radio: " + radio);
 
     }
 
