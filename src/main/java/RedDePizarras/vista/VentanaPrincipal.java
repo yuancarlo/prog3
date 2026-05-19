@@ -52,7 +52,7 @@ public class VentanaPrincipal extends JFrame  {
         JPanel panelRed = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         campoPuertoLocal = new JTextField("5000", 4);
         campoPuertoRemoto = new JTextField("5001", 4);
-        botonConectar = new JButton("Conectar (B)");
+        botonConectar = new JButton("Conectar ");
         botonDesconectar = new JButton("Desconectar");
         
         panelRed.add(new JLabel("Mi Puerto:"));
