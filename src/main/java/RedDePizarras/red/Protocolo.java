@@ -3,9 +3,13 @@ package RedDePizarras.red;
 
 import RedDePizarras.modelo.*;
 import Utilidades.ListaEnlazadaDoble;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.awt.Color;
 
 public class Protocolo {
+    private static final Logger logger = LogManager.getRootLogger();
     private ModeloPizarra modelo;
 
     public Protocolo(ModeloPizarra modelo) {
@@ -17,12 +21,12 @@ public class Protocolo {
             return null;
         }
 
-        System.out.println("<<< " + linea.trim()); 
+        logger.info("<<< " + linea.trim());
 
-        String[] tokens = linea.trim().split("\\s+");
-        if (tokens.length == 0) return null;
+        String[] partesComando = linea.trim().split("\\s+");
+        if (partesComando.length == 0) return null;
         
-        String comando = tokens[0].toUpperCase();
+        String comando = partesComando[0].toUpperCase();
 
         switch (comando) {
             case "HOLA":
@@ -51,9 +55,9 @@ public class Protocolo {
 
             case "CUADRADO":
                 try {
-                    int qx = Integer.parseInt(tokens[1]);
-                    int qy = Integer.parseInt(tokens[2]);
-                    int lado = Integer.parseInt(tokens[3]); // Usamos el ancho como lado
+                    int qx = Integer.parseInt(partesComando[1]);
+                    int qy = Integer.parseInt(partesComando[2]);
+                    int lado = Integer.parseInt(partesComando[3]);
                     
                     Cuadrado nuevoCuadrado = new Cuadrado(qx, qy, lado, Color.RED);
                     modelo.agregarFiguraRemota(nuevoCuadrado);
@@ -64,9 +68,9 @@ public class Protocolo {
 
             case "CIRCULO":
                 try {
-                    int cx = Integer.parseInt(tokens[1]);
-                    int cy = Integer.parseInt(tokens[2]);
-                    int radio = Integer.parseInt(tokens[3]) / 2;
+                    int cx = Integer.parseInt(partesComando[1]);
+                    int cy = Integer.parseInt(partesComando[2]);
+                    int radio = Integer.parseInt(partesComando[3]) / 2;
                     
                     Circulo nuevoCirculo = new Circulo(cx, cy, radio, Color.RED);
                     modelo.agregarFiguraRemota(nuevoCirculo);
@@ -90,6 +94,6 @@ public class Protocolo {
     }
 
     public void enviarLog(String mensaje) {
-        System.out.println(">>> " + mensaje.trim());
+        logger.info(">>> " + mensaje.trim());
     }
 }
