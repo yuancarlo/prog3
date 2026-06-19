@@ -3,9 +3,9 @@ package Utilidades;
 import java.util.Iterator;
 
 public class ListaEnlazadaDoble<G> implements Iterable<G>{
-    private Nodo<G> primero;
-    private Nodo<G> ultimo;
-    private int tamano;
+    protected Nodo<G> primero;
+    protected Nodo<G> ultimo;
+    protected int tamano;
 
     public ListaEnlazadaDoble() {
         this.primero = null;
@@ -68,6 +68,101 @@ public class ListaEnlazadaDoble<G> implements Iterable<G>{
             ultimo = nuevo;
         }
         tamano++;
+    }
+
+    public void eliminar(int indice) {
+        if (indice < 0 || indice >= tamano) {
+            return;
+        }
+
+        if (indice == 0) {
+            primero = primero.getSiguiente();
+            if (primero != null) {
+                primero.setAnterior(null);
+            } else {
+                ultimo = null;
+            }
+        } else if (indice == tamano - 1) {
+            ultimo = ultimo.getAnterior();
+            if (ultimo != null) {
+                ultimo.setSiguiente(null);
+            } else {
+                primero = null;
+            }
+        } else {
+
+            Nodo<G> actual = primero;
+            int contador = 0;
+
+            while (contador < indice) {
+                actual = actual.getSiguiente();
+                contador++;
+            }
+            Nodo<G> nodoAnterior = actual.getAnterior();
+            Nodo<G> nodoSiguiente = actual.getSiguiente();
+
+            nodoAnterior.setSiguiente(nodoSiguiente);
+            nodoSiguiente.setAnterior(nodoAnterior);
+        }
+        tamano--;
+    }
+
+    public G remover(int indice) {
+        if (indice < 0 || indice >= tamano) {
+            throw new IndexOutOfBoundsException("Indice invalido");
+        }
+
+        G eliminado;
+
+        if (indice == 0) {
+            eliminado = primero.getContenido();
+            primero = primero.getSiguiente();
+            if (primero != null) {
+                primero.setAnterior(null);
+            } else {
+                ultimo = null;
+            }
+        } else if (indice == tamano - 1) {
+            eliminado = ultimo.getContenido();
+            ultimo = ultimo.getAnterior();
+            if (ultimo != null) {
+                ultimo.setSiguiente(null);
+            } else {
+                primero = null;
+            }
+        } else {
+            Nodo<G> actual = primero;
+            int contador = 0;
+
+            while (contador < indice) {
+                actual = actual.getSiguiente();
+                contador++;
+            }
+
+            eliminado = actual.getContenido();
+            Nodo<G> nodoAnterior = actual.getAnterior();
+            Nodo<G> nodoSiguiente = actual.getSiguiente();
+
+            nodoAnterior.setSiguiente(nodoSiguiente);
+            nodoSiguiente.setAnterior(nodoAnterior);
+        }
+        tamano--;
+        return eliminado;
+    }
+
+
+    public boolean eliminarPorValor(G valor) {
+        Nodo<G> actual = primero;
+        int indice = 0;
+        while(actual != null) {
+            if (actual.getContenido().equals(valor)) {
+                eliminar(indice);
+                return true;
+            }
+            actual = actual.getSiguiente();
+            indice++;
+        }
+        return false;
     }
 
     public String toStringDetallado(){
