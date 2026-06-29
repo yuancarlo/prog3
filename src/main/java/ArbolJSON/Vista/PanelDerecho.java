@@ -1,5 +1,6 @@
 package ArbolJSON.Vista;
 
+import ArbolJSON.Modelo.DibujoArbol;
 import Utilidades.Arbol;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

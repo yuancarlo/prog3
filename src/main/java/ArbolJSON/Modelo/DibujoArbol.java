@@ -1,6 +1,7 @@
-package ArbolJSON.Vista;
+package ArbolJSON.Modelo;
 
 import Utilidades.Arbol;
+import Utilidades.IDibujable;
 
 import java.awt.*;
 import java.util.HashMap;

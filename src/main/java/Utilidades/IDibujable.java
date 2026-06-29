@@ -1,4 +1,4 @@
-package ArbolJSON.Vista;
+package Utilidades;
 
 import java.awt.Graphics;
 

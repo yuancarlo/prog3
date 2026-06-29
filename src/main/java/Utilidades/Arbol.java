@@ -84,7 +84,7 @@ public class Arbol<E> {
         System.out.println();
     }
 
-    public void insertar(String padre, E hijo) {
+    public void insertarr(String padre, E hijo) {
         if (padre == null) {
             raiz = new Nodo(hijo);
             nodos.put(hijo.toString(), raiz);
@@ -95,6 +95,33 @@ public class Arbol<E> {
         nodoPadre.insertarHijo(nodoHijo);
         nodos.put(hijo.toString(), nodoHijo);
     }
+
+    //Para arbol aritmetico
+    public String insertar(String padre, E hijo) {
+        if (padre != null && padre.isEmpty()) {
+            raiz = new Nodo(hijo);
+            if (hijo instanceof Identificable) {
+                Identificable hijoId = (Identificable)hijo;
+                nodos.put(hijoId.getId(), raiz);
+                return hijoId.getId();
+            } else {
+                nodos.put(hijo.toString(), raiz);
+                return hijo.toString();
+            }
+        }
+        Nodo<E> nodoPadre = nodos.get(padre);
+        Nodo<E> nodoHijo = new Nodo<>(hijo);
+        nodoPadre.insertarHijo(nodoHijo);
+        if (hijo instanceof Identificable) {
+            Identificable hijoId = (Identificable)hijo;
+            nodos.put(hijoId.getId(), nodoHijo);
+            return hijoId.getId();
+        } else {
+            nodos.put(hijo.toString(), nodoHijo);
+            return  hijo.toString();
+        }
+    }
+
 
     public boolean eliminarNodo(String idEliminar) {
         if (raiz != null && raiz.getContenido().toString().equals(idEliminar)) {
