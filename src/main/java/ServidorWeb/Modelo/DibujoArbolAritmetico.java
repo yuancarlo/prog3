@@ -7,59 +7,74 @@ import Utilidades.ArbolAritmetico.OperacionAritmetica;
 import java.awt.*;
 
 public class DibujoArbolAritmetico implements IDibujable {
+
+    // 1. CONSTANTES (Eliminación de "Magic Numbers")
+    private static final int LIENZO_ANCHO = 800;
+    private static final int LIENZO_ALTO = 600;
     private static final int TAMANO_NODO = 50;
     private static final int ESPACIO_HORIZONTAL = 30;
-    private static final int ESPACIO_VERTICAL_IDEAL = 55; // Separación perfecta y natural para árboles pequeños
+    private static final int ESPACIO_VERTICAL_IDEAL = 55;
+    private static final int ALTURA_MAXIMA_PERMITIDA = 400;
+    private static final int MIN_ESPACIO_VERTICAL = 25;
+
     private final ArbolAritmetico modelo;
 
     public DibujoArbolAritmetico(ArbolAritmetico modelo) {
         this.modelo = modelo;
     }
 
+    // 2. MÉTODO PRINCIPAL DE DIBUJO (Limpiado y orquestado)
     @Override
     public void dibujar(Graphics g, int x, int y) {
-        g.setColor(Color.WHITE);
-        g.fillRect(0, 0, 800, 600);
+        dibujarFondo(g);
 
         if (modelo.getRaiz() != null) {
             int profundidad = calcularProfundidad(modelo.getRaiz());
+            int espacioVertical = calcularEspacioVerticalDinamico(profundidad);
+            int xInicial = calcularCentradoHorizontal();
 
-            // 1. CÁLCULO VERTICAL INTELIGENTE (Auto-ajustable)
-            int espacioVerticalDinamico = ESPACIO_VERTICAL_IDEAL;
-
-            if (profundidad > 1) {
-                int alturaMaximaPermitida = 400;
-                // Calculamos cuánto mediría el árbol con el espaciado ideal
-                int alturaArbolNatural = (profundidad * TAMANO_NODO) + ((profundidad - 1) * ESPACIO_VERTICAL_IDEAL);
-
-                // Solo si el tamaño natural supera el límite permitido, comprimimos las líneas
-                if (alturaArbolNatural > alturaMaximaPermitida) {
-                    int espacioDisponible = alturaMaximaPermitida - (profundidad * TAMANO_NODO);
-                    espacioVerticalDinamico = espacioDisponible / (profundidad - 1);
-
-                    if (espacioVerticalDinamico < 25) {
-                        espacioVerticalDinamico = 25; // Límite mínimo de compresión por seguridad
-                    }
-                }
-            }
-
-            // 2. CÁLCULO HORIZONTAL (Centrado perfecto en el lienzo de 800px)
-            int anchoTotalArbol = calcularAncho(modelo.getRaiz());
-            int xInicialCentrado = (800 - anchoTotalArbol) / 2;
-            if (xInicialCentrado < 20) {
-                xInicialCentrado = 20;
-            }
-
-            // 3. Renderizar el árbol con los nuevos parámetros calculados
-            dibujarSubArbol(g, modelo.getRaiz(), xInicialCentrado, y + 25, espacioVerticalDinamico);
+            // Pinta el árbol desde una posición Y inicial (y + 25 como padding superior)
+            dibujarSubArbol(g, modelo.getRaiz(), xInicial, y + 25, espacioVertical);
         }
 
-        // 4. Zona de seguridad garantizada para el resultado (Abajo a la derecha)
+        dibujarResultado(g);
+    }
+
+    // 3. RESPONSABILIDADES SEPARADAS (Métodos pequeños y cohesivos)
+
+    private void dibujarFondo(Graphics g) {
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, LIENZO_ANCHO, LIENZO_ALTO);
+    }
+
+    private void dibujarResultado(Graphics g) {
         double resultado = modelo.evaluar().getValor();
         g.setColor(Color.BLACK);
         g.setFont(new Font("Consolas", Font.BOLD, 22));
         g.drawString("Resultado: " + resultado, 530, 550);
     }
+
+    private int calcularEspacioVerticalDinamico(int profundidad) {
+        if (profundidad <= 1) return ESPACIO_VERTICAL_IDEAL;
+
+        int alturaArbolNatural = (profundidad * TAMANO_NODO) + ((profundidad - 1) * ESPACIO_VERTICAL_IDEAL);
+
+        if (alturaArbolNatural > ALTURA_MAXIMA_PERMITIDA) {
+            int espacioDisponible = ALTURA_MAXIMA_PERMITIDA - (profundidad * TAMANO_NODO);
+            int espacioCalculado = espacioDisponible / (profundidad - 1);
+            return Math.max(espacioCalculado, MIN_ESPACIO_VERTICAL);
+        }
+
+        return ESPACIO_VERTICAL_IDEAL;
+    }
+
+    private int calcularCentradoHorizontal() {
+        int anchoTotal = calcularAncho(modelo.getRaiz());
+        int xCentrado = (LIENZO_ANCHO - anchoTotal) / 2;
+        return Math.max(xCentrado, 20); // Retorna centrado, garantizando un margen mínimo de 20
+    }
+
+    // 4. LÓGICA DE DIBUJO ESTRUCTURAL (Refactorizada a Iterativa N-aria)
 
     private void dibujarSubArbol(Graphics g, Arbol<OperacionAritmetica>.Nodo<OperacionAritmetica> nodo, int x, int y, int espacioVertical) {
         if (nodo.getHijos().getTamano() == 0) {
@@ -67,34 +82,34 @@ public class DibujoArbolAritmetico implements IDibujable {
             return;
         }
 
-        Arbol<OperacionAritmetica>.Nodo<OperacionAritmetica> izq = modelo.getIzquierda(nodo);
-        Arbol<OperacionAritmetica>.Nodo<OperacionAritmetica> der = modelo.getDerecha(nodo);
+        int anchoTotalNodo = calcularAncho(nodo);
+        int xCentroNodo = x + (anchoTotalNodo / 2) - (TAMANO_NODO / 2);
 
-        int anchoTotal = calcularAncho(nodo);
-        int anchoIzq = (izq != null) ? calcularAncho(izq) : 0;
-
-        int xNodoPadre = x + (anchoTotal / 2) - (TAMANO_NODO / 2);
-        int yHijo = y + TAMANO_NODO + espacioVertical;
+        int xHijoActual = x;
+        int yHijos = y + TAMANO_NODO + espacioVertical;
 
         g.setColor(Color.BLACK);
 
-        if (izq != null) {
-            int xHijoIzq = x + (anchoIzq / 2) - (TAMANO_NODO / 2);
-            g.drawLine(xNodoPadre + TAMANO_NODO / 2, y + TAMANO_NODO / 2,
-                    xHijoIzq + TAMANO_NODO / 2, yHijo + TAMANO_NODO / 2);
-            dibujarSubArbol(g, izq, x, yHijo, espacioVertical);
+        // ITERADOR INSPIRADO EN TU CLASE DE REFERENCIA:
+        // En lugar de hacer if(izq) y if(der) a mano, iteramos dinámicamente.
+        // Esto reduce el código a la mitad y lo hace mucho más tolerante a fallos.
+        for (Arbol<OperacionAritmetica>.Nodo<OperacionAritmetica> hijo : nodo.getHijos()) {
+            int anchoHijo = calcularAncho(hijo);
+            int xCentroHijo = xHijoActual + (anchoHijo / 2);
+
+            // Dibujar línea conectora entre el padre y este hijo
+            g.drawLine(xCentroNodo + (TAMANO_NODO / 2), y + (TAMANO_NODO / 2),
+                    xCentroHijo, yHijos + (TAMANO_NODO / 2));
+
+            // Llamada recursiva para dibujar el subárbol de este hijo
+            dibujarSubArbol(g, hijo, xHijoActual, yHijos, espacioVertical);
+
+            // Desplazar el puntero X para el hermano derecho
+            xHijoActual += anchoHijo + ESPACIO_HORIZONTAL;
         }
 
-        if (der != null) {
-            int xBaseSubArbolDerecho = x + anchoIzq + ESPACIO_HORIZONTAL;
-            int anchoDer = calcularAncho(der);
-            int xHijoDer = xBaseSubArbolDerecho + (anchoDer / 2) - (TAMANO_NODO / 2);
-            g.drawLine(xNodoPadre + TAMANO_NODO / 2, y + TAMANO_NODO / 2,
-                    xHijoDer + TAMANO_NODO / 2, yHijo + TAMANO_NODO / 2);
-            dibujarSubArbol(g, der, xBaseSubArbolDerecho, yHijo, espacioVertical);
-        }
-
-        dibujarNodoSuelto(g, nodo.getContenido().toString(), xNodoPadre, y);
+        // Dibujar el círculo del nodo padre ENCIMA de las líneas
+        dibujarNodoSuelto(g, nodo.getContenido().toString(), xCentroNodo, y);
     }
 
     private void dibujarNodoSuelto(Graphics g, String contenido, int x, int y) {
@@ -104,6 +119,7 @@ public class DibujoArbolAritmetico implements IDibujable {
         g.setColor(Color.BLACK);
         g.drawArc(x, y, TAMANO_NODO, TAMANO_NODO, 0, 360);
 
+        // Mantenemos tu lógica original de centrado dinámico (¡Es muy buena práctica!)
         g.setFont(new Font("Arial", Font.BOLD, 16));
         FontMetrics fm = g.getFontMetrics();
         int anchoTexto = fm.stringWidth(contenido);
@@ -115,26 +131,36 @@ public class DibujoArbolAritmetico implements IDibujable {
         g.drawString(contenido, xCentro, yCentro);
     }
 
+    // 5. MÉTODOS DE CÁLCULO (Adaptados para usar el Iterador)
+
     private int calcularAncho(Arbol<OperacionAritmetica>.Nodo<OperacionAritmetica> nodo) {
         if (nodo == null) return 0;
         if (nodo.getHijos().getTamano() == 0) return TAMANO_NODO;
 
-        Arbol<OperacionAritmetica>.Nodo<OperacionAritmetica> izq = modelo.getIzquierda(nodo);
-        Arbol<OperacionAritmetica>.Nodo<OperacionAritmetica> der = modelo.getDerecha(nodo);
+        int anchoAcumulado = 0;
+        int separacionHorizontal = 0;
 
-        int anchoIzq = (izq != null) ? calcularAncho(izq) : 0;
-        int anchoDer = (der != null) ? calcularAncho(der) : 0;
+        for (Arbol<OperacionAritmetica>.Nodo<OperacionAritmetica> hijo : nodo.getHijos()) {
+            anchoAcumulado += separacionHorizontal + calcularAncho(hijo);
+            separacionHorizontal = ESPACIO_HORIZONTAL;
+        }
 
-        return anchoIzq + ESPACIO_HORIZONTAL + anchoDer;
+        return anchoAcumulado;
     }
 
     private int calcularProfundidad(Arbol<OperacionAritmetica>.Nodo<OperacionAritmetica> nodo) {
         if (nodo == null) return 0;
         if (nodo.getHijos().getTamano() == 0) return 1;
 
-        int profIzq = calcularProfundidad(modelo.getIzquierda(nodo));
-        int profDer = calcularProfundidad(modelo.getDerecha(nodo));
+        int profundidadMaximaDeHijos = 0;
 
-        return 1 + Math.max(profIzq, profDer);
+        for (Arbol<OperacionAritmetica>.Nodo<OperacionAritmetica> hijo : nodo.getHijos()) {
+            int profundidadHijo = calcularProfundidad(hijo);
+            if (profundidadHijo > profundidadMaximaDeHijos) {
+                profundidadMaximaDeHijos = profundidadHijo;
+            }
+        }
+
+        return 1 + profundidadMaximaDeHijos;
     }
 }
