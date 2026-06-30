@@ -16,7 +16,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-// Importamos las constantes nativas de Java para los códigos HTTP
 import static java.net.HttpURLConnection.*;
 
 public class ProtocoloWeb implements Runnable {
@@ -29,7 +28,6 @@ public class ProtocoloWeb implements Runnable {
     private static final String MIME_HTML = "text/html";
     private static final String MIME_JPG = "image/jpeg";
 
-    // Mantenemos la compatibilidad exacta con tu ServidorWeb actual
     public final PropertyChangeSupport observadorProtocolo;
 
     public ProtocoloWeb(Socket cliente) throws IOException {
@@ -51,6 +49,9 @@ public class ProtocoloWeb implements Runnable {
                 return;
             }
 
+            // Log de la petición HTTP cruda que llegó al socket
+            logger.info("Petición HTTP recibida: " + peticion);
+
             bytesIn = peticion.getBytes(StandardCharsets.UTF_8).length;
             Matcher matcher = Pattern.compile(REGEX_GET).matcher(peticion);
 
@@ -62,30 +63,32 @@ public class ProtocoloWeb implements Runnable {
             }
 
         } catch (Exception e) {
-            logger.error("Error crítico inesperado en el hilo de conexión", e);
+            logger.error("Error crítico inesperado en el procesamiento de la petición del cliente", e);
             bytesOut = responderError(HTTP_INTERNAL_ERROR, "Internal Server Error",
                     "Error Interno", "Fallo imprevisto en el servidor.");
         } finally {
-            // Notificamos a la ventana (UI) manteniendo tu compatibilidad
             observadorProtocolo.firePropertyChange("NUEVO_TRAFICO", null, new long[]{bytesIn, bytesOut});
             cerrarSocket();
         }
     }
 
-    // --- MÉTODOS CONTROLADORES DE RUTAS ---
-
     private long procesarExpresionMatematica(String expresionCodificada) {
         try {
             String expresion = decodificarUrl(expresionCodificada);
+            logger.info("URL decodificada con éxito. Procesando expresión matemática: " + expresion);
+
             ArbolAritmetico arbol = ParserAritmetico.construirDesdeString(expresion);
-            return responderImagen(arbol);
+            long bytes = responderImagen(arbol);
+
+            logger.info("Imagen del árbol aritmético generada y enviada correctamente.");
+            return bytes;
 
         } catch (IllegalArgumentException e) {
-            logger.warn("URL mal codificada: " + e.getMessage());
+            logger.warn("Petición rechazada (HTTP 400). URL mal codificada o con caracteres inválidos: " + e.getMessage());
             return responderError(HTTP_BAD_REQUEST, "Bad Request", "Error de Codificación",
                     "Falta codificar correctamente caracteres como el % o el +.");
         } catch (Exception e) {
-            logger.warn("Error aritmético: " + e.getMessage());
+            logger.warn("Petición rechazada (HTTP 400). Expresión aritmética estructuralmente inválida: " + e.getMessage());
             return responderError(HTTP_BAD_REQUEST, "Bad Request", "Expresión Inválida",
                     "Verifica los paréntesis y operadores de la expresión matemática.");
         }
@@ -93,19 +96,21 @@ public class ProtocoloWeb implements Runnable {
 
     private long procesarRutaDesconocida(String peticion) {
         if (peticion.contains("favicon.ico")) {
+            logger.info("Petición de favicon ignorada (HTTP 404).");
             return responderError(HTTP_NOT_FOUND, "Not Found", "Favicon No Encontrado", "");
         } else {
-            logger.warn("Ruta no soportada: " + peticion);
+            logger.warn("Petición rechazada (HTTP 400). Ruta no soportada por el servidor: " + peticion);
             return responderError(HTTP_BAD_REQUEST, "Bad Request", "Ruta Incorrecta",
                     "Usa el formato: /op?q={expresion_codificada}");
         }
     }
 
-    // --- MÉTODOS DE RESPUESTA (VISTAS) ---
-
     private long responderImagen(ArbolAritmetico arbol) {
         byte[] imgBytes = crearBufferImagen(arbol);
-        if (imgBytes == null) return responderError(HTTP_INTERNAL_ERROR, "Error", "Fallo Gráfico", "No se pudo generar la imagen");
+        if (imgBytes == null) {
+            logger.error("Fallo interno al convertir el Graphics2D en bytes de imagen JPEG.");
+            return responderError(HTTP_INTERNAL_ERROR, "Error", "Fallo Gráfico", "No se pudo generar la imagen");
+        }
 
         String encabezado = crearEncabezado(HTTP_OK, "OK", MIME_JPG, imgBytes.length);
         enviarRespuesta(encabezado, imgBytes);
@@ -123,8 +128,6 @@ public class ProtocoloWeb implements Runnable {
         return encabezado.getBytes(StandardCharsets.UTF_8).length + contenido.length;
     }
 
-    // --- MÉTODOS UTILITARIOS (HERRAMIENTAS BASE) ---
-
     private byte[] crearBufferImagen(ArbolAritmetico arbol) {
         try {
             BufferedImage image = new BufferedImage(800, 600, BufferedImage.TYPE_INT_RGB);
@@ -139,7 +142,7 @@ public class ProtocoloWeb implements Runnable {
             ImageIO.write(image, "jpg", baos);
             return baos.toByteArray();
         } catch (IOException e) {
-            logger.error("Error al escribir los bytes de la imagen", e);
+            logger.error("Excepción IO al intentar escribir los bytes de la imagen generada", e);
             return null;
         }
     }
@@ -168,7 +171,7 @@ public class ProtocoloWeb implements Runnable {
             }
             salida.flush();
         } catch (IOException e) {
-            logger.error("Fallo al escribir en el canal de salida hacia el cliente", e);
+            logger.error("Error de I/O al escribir la respuesta en el canal de salida del socket", e);
         }
     }
 
@@ -178,9 +181,12 @@ public class ProtocoloWeb implements Runnable {
 
     private void cerrarSocket() {
         try {
-            if (clt != null && !clt.isClosed()) clt.close();
+            if (clt != null && !clt.isClosed()) {
+                clt.close();
+                logger.info("Socket del cliente cerrado limpiamente.");
+            }
         } catch (IOException e) {
-            logger.error("Error cerrando socket del cliente", e);
+            logger.error("Fallo al intentar cerrar el socket del cliente de forma segura", e);
         }
     }
 

@@ -1,6 +1,8 @@
 package ServidorWeb.Vista;
 
 import ServidorWeb.Modelo.ServidorWeb;
+// MODIFICACIÓN: Importamos el nuevo Enum para procesar el evento
+import ServidorWeb.Modelo.EstadoServidor;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -14,7 +16,6 @@ public class ServidorWebVentana extends JFrame implements PropertyChangeListener
     private final JLabel lblStatus, lblClientes, lblTraficoIn, lblTraficoOut;
 
     public ServidorWebVentana() {
-        // Fuerza a la ventana a usar el estilo visual estándar de tu sistema operativo
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {}
@@ -26,12 +27,10 @@ public class ServidorWebVentana extends JFrame implements PropertyChangeListener
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(new BorderLayout(15, 15));
 
-        // Panel de Controles
         JPanel pnlBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         pnlBotones.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createEtchedBorder(), "Controles del Servidor", TitledBorder.LEFT, TitledBorder.TOP));
 
-        // Botones con su apariencia nativa por defecto
         btnIniciar = new JButton("Comenzar Servidor");
         btnParar = new JButton("Detener Servidor");
         btnParar.setEnabled(false);
@@ -42,12 +41,11 @@ public class ServidorWebVentana extends JFrame implements PropertyChangeListener
         pnlBotones.add(btnIniciar);
         pnlBotones.add(btnParar);
 
-        // Panel de Métricas
         JPanel pnlMetricas = new JPanel(new GridLayout(4, 1, 5, 5));
         pnlMetricas.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createEtchedBorder(), "Métricas en Tiempo Real", TitledBorder.LEFT, TitledBorder.TOP));
 
-        lblStatus = new JLabel("Estado: PARADO", SwingConstants.LEFT);
+        lblStatus = new JLabel("Estado: CREADO (Listo)", SwingConstants.LEFT);
         lblStatus.setFont(new Font("Segoe UI", Font.BOLD, 14));
 
         lblClientes = new JLabel("Clientes Atendidos: 0", SwingConstants.LEFT);
@@ -62,7 +60,6 @@ public class ServidorWebVentana extends JFrame implements PropertyChangeListener
         add(pnlBotones, BorderLayout.NORTH);
         add(pnlMetricas, BorderLayout.CENTER);
 
-        // Márgenes exteriores
         ((JComponent) getContentPane()).setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         setSize(380, 280);
@@ -76,10 +73,20 @@ public class ServidorWebVentana extends JFrame implements PropertyChangeListener
         SwingUtilities.invokeLater(() -> {
             switch (evt.getPropertyName()) {
                 case "ESTADO" -> {
-                    boolean activo = "CORRIENDO".equals(evt.getNewValue());
+                    // MODIFICACIÓN: Casteamos el valor al nuevo tipo Enum EstadoServidor
+                    EstadoServidor nuevoEstado = (EstadoServidor) evt.getNewValue();
+                    boolean activo = (nuevoEstado == EstadoServidor.COMENZADO);
+
                     btnIniciar.setEnabled(!activo);
                     btnParar.setEnabled(activo);
-                    lblStatus.setText("Estado: " + (activo ? "EN LINEA (Puerto 8080)" : "PARADO"));
+
+                    // MODIFICACIÓN: Expresión switch para manejar limpiamente la salida en la interfaz
+                    String textoEstado = switch (nuevoEstado) {
+                        case CREADO -> "Estado: CREADO (Listo)";
+                        case COMENZADO -> "Estado: EN LINEA (Puerto 8080)";
+                        case DETENIDO -> "Estado: DETENIDO / PARADO";
+                    };
+                    lblStatus.setText(textoEstado);
                 }
                 case "CLIENTES" -> lblClientes.setText("Clientes Atendidos: " + evt.getNewValue());
                 case "TRAFICO" -> {

@@ -9,11 +9,10 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-// Implementa PropertyChangeListener para escuchar a sus hilos hijos
 public class ServidorWeb implements Runnable, PropertyChangeListener {
     private static final Logger logger = LogManager.getRootLogger();
     private final int puerto;
-    private volatile boolean corriendo;
+    private volatile EstadoServidor estado;
     private ServerSocket srv;
     public final PropertyChangeSupport observador;
 
@@ -23,54 +22,81 @@ public class ServidorWeb implements Runnable, PropertyChangeListener {
 
     public ServidorWeb(int puerto) {
         this.puerto = puerto;
-        this.corriendo = false;
+        this.estado = EstadoServidor.CREADO;
         this.observador = new PropertyChangeSupport(this);
+        logger.info("Instancia del ServidorWeb creada en el puerto " + puerto + " (Estado: CREADO).");
     }
 
     public void comenzar() {
-        if (!corriendo) {
-            corriendo = true;
-            new Thread(this).start();
-            observador.firePropertyChange("ESTADO", "PARADO", "CORRIENDO");
+        if (estado != EstadoServidor.COMENZADO) {
+            logger.info("Iniciando secuencia de arranque del servidor...");
+            EstadoServidor estadoAnterior = this.estado;
+            this.estado = EstadoServidor.COMENZADO;
+
+            new Thread(this, "Hilo-ServidorPrincipal").start();
+
+            observador.firePropertyChange("ESTADO", estadoAnterior, EstadoServidor.COMENZADO);
+        } else {
+            logger.warn("Intento de iniciar el servidor cuando ya estaba COMENZADO.");
         }
     }
 
     public void pararServidor() {
-        corriendo = false;
-        try {
-            if (srv != null && !srv.isClosed()) {
-                srv.close();
+        if (estado == EstadoServidor.COMENZADO) {
+            logger.info("Secuencia de apagado solicitada. Deteniendo servidor y rechazando nuevas conexiones...");
+            EstadoServidor estadoAnterior = this.estado;
+            this.estado = EstadoServidor.DETENIDO;
+            try {
+                if (srv != null && !srv.isClosed()) {
+                    srv.close();
+                    logger.info("ServerSocket cerrado correctamente.");
+                }
+            } catch (IOException e) {
+                logger.error("Excepción al intentar cerrar el ServerSocket", e);
             }
-        } catch (IOException e) {
-            logger.error("Error al cerrar ServerSocket", e);
+            observador.firePropertyChange("ESTADO", estadoAnterior, EstadoServidor.DETENIDO);
+            logger.info("El servidor se ha detenido por completo.");
         }
-        observador.firePropertyChange("ESTADO", "CORRIENDO", "PARADO");
     }
 
     @Override
     public void run() {
         try {
             srv = new ServerSocket(puerto);
-            logger.info("Servidor escuchando en puerto " + puerto);
+            logger.info("Servidor escuchando activamente en el puerto " + puerto);
 
-            while (corriendo) {
+            while (estado == EstadoServidor.COMENZADO) {
                 Socket cliente = srv.accept();
                 clientesAtendidos++;
+
+                // Log detallado de la conexión entrante
+                String ipCliente = cliente.getInetAddress().getHostAddress();
+                logger.info("NUEVA CONEXIÓN ACEPTADA: Cliente #" + clientesAtendidos + " [IP: " + ipCliente + "]");
+
                 observador.firePropertyChange("CLIENTES", clientesAtendidos - 1, clientesAtendidos);
 
-                // Creamos el protocolo
                 ProtocoloWeb protocolo = new ProtocoloWeb(cliente);
-                // ¡El Servidor se suscribe como OYENTE del hilo antes de iniciarlo!
                 protocolo.observadorProtocolo.addPropertyChangeListener(this);
 
-                new Thread(protocolo).start();
+                new Thread(protocolo, "Hilo-Cliente-" + clientesAtendidos).start();
             }
         } catch (IOException e) {
-            if(corriendo) logger.error("Error en la conexión", e);
+            if (estado == EstadoServidor.COMENZADO) {
+                logger.error("Caída de conexión inesperada mientras el servidor estaba activo", e);
+            } else {
+                logger.info("Interrupción controlada del hilo de escucha (Servidor detenido).");
+            }
         }
     }
 
-    // Método que reacciona a los "gritos" (eventos) del ProtocoloWeb
+    public boolean isCorriendo() {
+        return estado == EstadoServidor.COMENZADO;
+    }
+
+    public EstadoServidor getEstado() {
+        return estado;
+    }
+
     @Override
     public synchronized void propertyChange(PropertyChangeEvent evt) {
         if ("NUEVO_TRAFICO".equals(evt.getPropertyName())) {
@@ -78,11 +104,9 @@ public class ServidorWeb implements Runnable, PropertyChangeListener {
             this.totalBytesEntrada += nuevosBytes[0];
             this.totalBytesSalida += nuevosBytes[1];
 
-            // Re-transmitimos la información acumulada a la ventana (UI)
             observador.firePropertyChange("TRAFICO", null, new long[]{totalBytesEntrada, totalBytesSalida});
         }
     }
 
-    public boolean isCorriendo() { return corriendo; }
     public int getClientesAtendidos() { return clientesAtendidos; }
 }
