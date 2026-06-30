@@ -1,7 +1,6 @@
 package ServidorWeb.Vista;
 
 import ServidorWeb.Modelo.ServidorWeb;
-// MODIFICACIÓN: Importamos el nuevo Enum para procesar el evento
 import ServidorWeb.Modelo.EstadoServidor;
 
 import javax.swing.*;
@@ -18,7 +17,8 @@ public class ServidorWebVentana extends JFrame implements PropertyChangeListener
     public ServidorWebVentana() {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         this.servidor = new ServidorWeb(8080);
         this.servidor.observador.addPropertyChangeListener(this);
@@ -73,14 +73,12 @@ public class ServidorWebVentana extends JFrame implements PropertyChangeListener
         SwingUtilities.invokeLater(() -> {
             switch (evt.getPropertyName()) {
                 case "ESTADO" -> {
-                    // MODIFICACIÓN: Casteamos el valor al nuevo tipo Enum EstadoServidor
                     EstadoServidor nuevoEstado = (EstadoServidor) evt.getNewValue();
                     boolean activo = (nuevoEstado == EstadoServidor.COMENZADO);
 
                     btnIniciar.setEnabled(!activo);
                     btnParar.setEnabled(activo);
 
-                    // MODIFICACIÓN: Expresión switch para manejar limpiamente la salida en la interfaz
                     String textoEstado = switch (nuevoEstado) {
                         case CREADO -> "Estado: CREADO (Listo)";
                         case COMENZADO -> "Estado: EN LINEA (Puerto 8080)";

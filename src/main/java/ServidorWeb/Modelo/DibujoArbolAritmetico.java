@@ -8,12 +8,11 @@ import java.awt.*;
 
 public class DibujoArbolAritmetico implements IDibujable {
 
-    // 1. CONSTANTES (Eliminación de "Magic Numbers")
     private static final int LIENZO_ANCHO = 800;
     private static final int LIENZO_ALTO = 600;
     private static final int TAMANO_NODO = 50;
     private static final int ESPACIO_HORIZONTAL = 30;
-    private static final int ESPACIO_VERTICAL_IDEAL = 55;
+    private static final int ESPACIO_VERTICAL = 55;
     private static final int ALTURA_MAXIMA_PERMITIDA = 400;
     private static final int MIN_ESPACIO_VERTICAL = 25;
 
@@ -23,7 +22,7 @@ public class DibujoArbolAritmetico implements IDibujable {
         this.modelo = modelo;
     }
 
-    // 2. MÉTODO PRINCIPAL DE DIBUJO (Limpiado y orquestado)
+   
     @Override
     public void dibujar(Graphics g, int x, int y) {
         dibujarFondo(g);
@@ -33,14 +32,11 @@ public class DibujoArbolAritmetico implements IDibujable {
             int espacioVertical = calcularEspacioVerticalDinamico(profundidad);
             int xInicial = calcularCentradoHorizontal();
 
-            // Pinta el árbol desde una posición Y inicial (y + 25 como padding superior)
             dibujarSubArbol(g, modelo.getRaiz(), xInicial, y + 25, espacioVertical);
         }
 
         dibujarResultado(g);
     }
-
-    // 3. RESPONSABILIDADES SEPARADAS (Métodos pequeños y cohesivos)
 
     private void dibujarFondo(Graphics g) {
         g.setColor(Color.WHITE);
@@ -55,9 +51,9 @@ public class DibujoArbolAritmetico implements IDibujable {
     }
 
     private int calcularEspacioVerticalDinamico(int profundidad) {
-        if (profundidad <= 1) return ESPACIO_VERTICAL_IDEAL;
+        if (profundidad <= 1) return ESPACIO_VERTICAL;
 
-        int alturaArbolNatural = (profundidad * TAMANO_NODO) + ((profundidad - 1) * ESPACIO_VERTICAL_IDEAL);
+        int alturaArbolNatural = (profundidad * TAMANO_NODO) + ((profundidad - 1) * ESPACIO_VERTICAL);
 
         if (alturaArbolNatural > ALTURA_MAXIMA_PERMITIDA) {
             int espacioDisponible = ALTURA_MAXIMA_PERMITIDA - (profundidad * TAMANO_NODO);
@@ -65,16 +61,15 @@ public class DibujoArbolAritmetico implements IDibujable {
             return Math.max(espacioCalculado, MIN_ESPACIO_VERTICAL);
         }
 
-        return ESPACIO_VERTICAL_IDEAL;
+        return ESPACIO_VERTICAL;
     }
 
     private int calcularCentradoHorizontal() {
         int anchoTotal = calcularAncho(modelo.getRaiz());
         int xCentrado = (LIENZO_ANCHO - anchoTotal) / 2;
-        return Math.max(xCentrado, 20); // Retorna centrado, garantizando un margen mínimo de 20
+        return Math.max(xCentrado, 20); 
     }
 
-    // 4. LÓGICA DE DIBUJO ESTRUCTURAL (Refactorizada a Iterativa N-aria)
 
     private void dibujarSubArbol(Graphics g, Arbol<OperacionAritmetica>.Nodo<OperacionAritmetica> nodo, int x, int y, int espacioVertical) {
         if (nodo.getHijos().getTamano() == 0) {
@@ -90,25 +85,20 @@ public class DibujoArbolAritmetico implements IDibujable {
 
         g.setColor(Color.BLACK);
 
-        // ITERADOR INSPIRADO EN TU CLASE DE REFERENCIA:
-        // En lugar de hacer if(izq) y if(der) a mano, iteramos dinámicamente.
-        // Esto reduce el código a la mitad y lo hace mucho más tolerante a fallos.
+    
         for (Arbol<OperacionAritmetica>.Nodo<OperacionAritmetica> hijo : nodo.getHijos()) {
             int anchoHijo = calcularAncho(hijo);
             int xCentroHijo = xHijoActual + (anchoHijo / 2);
 
-            // Dibujar línea conectora entre el padre y este hijo
             g.drawLine(xCentroNodo + (TAMANO_NODO / 2), y + (TAMANO_NODO / 2),
                     xCentroHijo, yHijos + (TAMANO_NODO / 2));
 
-            // Llamada recursiva para dibujar el subárbol de este hijo
+         
             dibujarSubArbol(g, hijo, xHijoActual, yHijos, espacioVertical);
 
-            // Desplazar el puntero X para el hermano derecho
             xHijoActual += anchoHijo + ESPACIO_HORIZONTAL;
         }
 
-        // Dibujar el círculo del nodo padre ENCIMA de las líneas
         dibujarNodoSuelto(g, nodo.getContenido().toString(), xCentroNodo, y);
     }
 
@@ -119,7 +109,7 @@ public class DibujoArbolAritmetico implements IDibujable {
         g.setColor(Color.BLACK);
         g.drawArc(x, y, TAMANO_NODO, TAMANO_NODO, 0, 360);
 
-        // Mantenemos tu lógica original de centrado dinámico (¡Es muy buena práctica!)
+
         g.setFont(new Font("Arial", Font.BOLD, 16));
         FontMetrics fm = g.getFontMetrics();
         int anchoTexto = fm.stringWidth(contenido);
@@ -131,7 +121,6 @@ public class DibujoArbolAritmetico implements IDibujable {
         g.drawString(contenido, xCentro, yCentro);
     }
 
-    // 5. MÉTODOS DE CÁLCULO (Adaptados para usar el Iterador)
 
     private int calcularAncho(Arbol<OperacionAritmetica>.Nodo<OperacionAritmetica> nodo) {
         if (nodo == null) return 0;

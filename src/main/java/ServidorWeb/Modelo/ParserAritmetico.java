@@ -8,17 +8,12 @@ import Utilidades.ArbolAritmetico.Operador;
 
 public class ParserAritmetico {
 
-    // Método público original intacto. No afecta a las otras clases.
+
     public static ArbolAritmetico construirDesdeString(String expresion) {
-        // Se instancia un objeto parseador interno por cada petición.
-        // Esto garantiza que el servidor web sea Thread-Safe (seguro en hilos).
         return new ParseadorRecursivo(expresion).parsear();
     }
 
-    /**
-     * Clase interna privada que implementa el Descenso Recursivo.
-     * Reemplaza las pilas explícitas utilizando la pila de llamadas nativa de Java.
-     */
+
     private static class ParseadorRecursivo {
         private final String expresion;
         private int posicion = -1;
@@ -29,8 +24,6 @@ public class ParserAritmetico {
             this.expresion = expresion;
             this.arbol = new ArbolAritmetico();
         }
-
-        // --- NÚCLEO DEL PARSEADOR ---
 
         public ArbolAritmetico parsear() {
             avanzarCaracter();
@@ -44,7 +37,6 @@ public class ParserAritmetico {
             return arbol;
         }
 
-        // 1. Nivel de Sumas y Restas (Menor precedencia)
         private ArbolAritmetico.Nodo<OperacionAritmetica> procesarExpresion() {
             ArbolAritmetico.Nodo<OperacionAritmetica> nodo = procesarTermino();
 
@@ -59,7 +51,6 @@ public class ParserAritmetico {
             }
         }
 
-        // 2. Nivel de Multiplicaciones y Divisiones (Mayor precedencia)
         private ArbolAritmetico.Nodo<OperacionAritmetica> procesarTermino() {
             ArbolAritmetico.Nodo<OperacionAritmetica> nodo = procesarFactor();
 
@@ -74,7 +65,6 @@ public class ParserAritmetico {
             }
         }
 
-        // 3. Nivel Base: Números aislados o Paréntesis (Máxima precedencia)
         private ArbolAritmetico.Nodo<OperacionAritmetica> procesarFactor() {
             if (consumirCaracter('(')) {
                 ArbolAritmetico.Nodo<OperacionAritmetica> nodo = procesarExpresion();
@@ -95,7 +85,6 @@ public class ParserAritmetico {
             throw new IllegalArgumentException("Sintaxis incorrecta cerca de la posición: " + posicionInicio);
         }
 
-        // --- HERRAMIENTAS UTILITARIAS ---
 
         private void avanzarCaracter() {
             caracterActual = (++posicion < expresion.length()) ? expresion.charAt(posicion) : -1;
@@ -103,7 +92,7 @@ public class ParserAritmetico {
 
         private boolean consumirCaracter(int caracterBuscado) {
             while (caracterActual == ' ') {
-                avanzarCaracter(); // Ignora espacios en blanco dinámicamente
+                avanzarCaracter(); 
             }
             if (caracterActual == caracterBuscado) {
                 avanzarCaracter();
@@ -118,7 +107,7 @@ public class ParserAritmetico {
                 ArbolAritmetico.Nodo<OperacionAritmetica> der) {
 
             ArbolAritmetico.Nodo<OperacionAritmetica> nodoOp = arbol.new Nodo<>(new Operador(op));
-            nodoOp.insertarHijo(izq); // La clase Nodo mantiene tu estructura original
+            nodoOp.insertarHijo(izq); 
             nodoOp.insertarHijo(der);
             return nodoOp;
         }

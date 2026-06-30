@@ -69,7 +69,6 @@ public class ServidorWeb implements Runnable, PropertyChangeListener {
                 Socket cliente = srv.accept();
                 clientesAtendidos++;
 
-                // Log detallado de la conexión entrante
                 String ipCliente = cliente.getInetAddress().getHostAddress();
                 logger.info("NUEVA CONEXIÓN ACEPTADA: Cliente #" + clientesAtendidos + " [IP: " + ipCliente + "]");
 

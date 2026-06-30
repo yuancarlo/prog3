@@ -49,7 +49,6 @@ public class ProtocoloWeb implements Runnable {
                 return;
             }
 
-            // Log de la petición HTTP cruda que llegó al socket
             logger.info("Petición HTTP recibida: " + peticion);
 
             bytesIn = peticion.getBytes(StandardCharsets.UTF_8).length;
@@ -86,7 +85,7 @@ public class ProtocoloWeb implements Runnable {
         } catch (IllegalArgumentException e) {
             logger.warn("Petición rechazada (HTTP 400). URL mal codificada o con caracteres inválidos: " + e.getMessage());
             return responderError(HTTP_BAD_REQUEST, "Bad Request", "Error de Codificación",
-                    "Falta codificar correctamente caracteres como el % o el +.");
+                    "Falta codificar correctamente los caracteres.");
         } catch (Exception e) {
             logger.warn("Petición rechazada (HTTP 400). Expresión aritmética estructuralmente inválida: " + e.getMessage());
             return responderError(HTTP_BAD_REQUEST, "Bad Request", "Expresión Inválida",
@@ -101,7 +100,7 @@ public class ProtocoloWeb implements Runnable {
         } else {
             logger.warn("Petición rechazada (HTTP 400). Ruta no soportada por el servidor: " + peticion);
             return responderError(HTTP_BAD_REQUEST, "Bad Request", "Ruta Incorrecta",
-                    "Usa el formato: /op?q={expresion_codificada}");
+                    "Usa el formato de ruta correcto: /op?q={expresion_codificada}");
         }
     }
 
