@@ -1,74 +1,126 @@
 package ServidorWeb.Modelo;
 
-import Utilidades.ArbolAritmetico.*;
-
-import java.util.Stack;
+import Utilidades.ArbolAritmetico.ArbolAritmetico;
+import Utilidades.ArbolAritmetico.EnumOperacion;
+import Utilidades.ArbolAritmetico.Numero;
+import Utilidades.ArbolAritmetico.OperacionAritmetica;
+import Utilidades.ArbolAritmetico.Operador;
 
 public class ParserAritmetico {
 
-    // Método pragmático para construir el árbol usando dos pilas (Shunting Yard simplificado)
+    // Método público original intacto. No afecta a las otras clases.
     public static ArbolAritmetico construirDesdeString(String expresion) {
-        ArbolAritmetico arbol = new ArbolAritmetico();
-        Stack<ArbolAritmetico.Nodo<OperacionAritmetica>> nodos = new Stack<>();
-        Stack<Character> operadores = new Stack<>();
+        // Se instancia un objeto parseador interno por cada petición.
+        // Esto garantiza que el servidor web sea Thread-Safe (seguro en hilos).
+        return new ParseadorRecursivo(expresion).parsear();
+    }
 
-        for (int i = 0; i < expresion.length(); i++) {
-            char c = expresion.charAt(i);
-            if (c == ' ') continue;
+    /**
+     * Clase interna privada que implementa el Descenso Recursivo.
+     * Reemplaza las pilas explícitas utilizando la pila de llamadas nativa de Java.
+     */
+    private static class ParseadorRecursivo {
+        private final String expresion;
+        private int posicion = -1;
+        private int caracterActual;
+        private final ArbolAritmetico arbol;
 
-            if (Character.isDigit(c) || c == '.') {
-                StringBuilder num = new StringBuilder();
-                while (i < expresion.length() && (Character.isDigit(expresion.charAt(i)) || expresion.charAt(i) == '.')) {
-                    num.append(expresion.charAt(i++));
+        public ParseadorRecursivo(String expresion) {
+            this.expresion = expresion;
+            this.arbol = new ArbolAritmetico();
+        }
+
+        // --- NÚCLEO DEL PARSEADOR ---
+
+        public ArbolAritmetico parsear() {
+            avanzarCaracter();
+            ArbolAritmetico.Nodo<OperacionAritmetica> raiz = procesarExpresion();
+
+            if (posicion < expresion.length()) {
+                throw new IllegalArgumentException("Carácter inesperado en la expresión: " + (char)caracterActual);
+            }
+
+            arbol.setRaiz(raiz);
+            return arbol;
+        }
+
+        // 1. Nivel de Sumas y Restas (Menor precedencia)
+        private ArbolAritmetico.Nodo<OperacionAritmetica> procesarExpresion() {
+            ArbolAritmetico.Nodo<OperacionAritmetica> nodo = procesarTermino();
+
+            for (;;) {
+                if (consumirCaracter('+')) {
+                    nodo = crearNodo(EnumOperacion.Suma, nodo, procesarTermino());
+                } else if (consumirCaracter('-')) {
+                    nodo = crearNodo(EnumOperacion.Resta, nodo, procesarTermino());
+                } else {
+                    return nodo;
                 }
-                i--;
-                Numero numero = new Numero(Double.parseDouble(num.toString()));
-                nodos.push(arbol.new Nodo<>(numero));
-            } else if (c == '(') {
-                operadores.push(c);
-            } else if (c == ')') {
-                while (operadores.peek() != '(') {
-                    nodos.push(crearNodoOperador(arbol, operadores.pop(), nodos.pop(), nodos.pop()));
-                }
-                operadores.pop();
-            } else if (esOperador(c)) {
-                while (!operadores.isEmpty() && precedencia(c) <= precedencia(operadores.peek())) {
-                    nodos.push(crearNodoOperador(arbol, operadores.pop(), nodos.pop(), nodos.pop()));
-                }
-                operadores.push(c);
             }
         }
 
-        while (!operadores.isEmpty()) {
-            nodos.push(crearNodoOperador(arbol, operadores.pop(), nodos.pop(), nodos.pop()));
+        // 2. Nivel de Multiplicaciones y Divisiones (Mayor precedencia)
+        private ArbolAritmetico.Nodo<OperacionAritmetica> procesarTermino() {
+            ArbolAritmetico.Nodo<OperacionAritmetica> nodo = procesarFactor();
+
+            for (;;) {
+                if (consumirCaracter('*')) {
+                    nodo = crearNodo(EnumOperacion.Multiplicacion, nodo, procesarFactor());
+                } else if (consumirCaracter('/')) {
+                    nodo = crearNodo(EnumOperacion.Division, nodo, procesarFactor());
+                } else {
+                    return nodo;
+                }
+            }
         }
 
-        arbol.setRaiz(nodos.pop());
-        return arbol;
-    }
+        // 3. Nivel Base: Números aislados o Paréntesis (Máxima precedencia)
+        private ArbolAritmetico.Nodo<OperacionAritmetica> procesarFactor() {
+            if (consumirCaracter('(')) {
+                ArbolAritmetico.Nodo<OperacionAritmetica> nodo = procesarExpresion();
+                consumirCaracter(')');
+                return nodo;
+            }
 
-    private static ArbolAritmetico.Nodo<OperacionAritmetica> crearNodoOperador(ArbolAritmetico arbol, char op, ArbolAritmetico.Nodo<OperacionAritmetica> der, ArbolAritmetico.Nodo<OperacionAritmetica> izq) {
-        EnumOperacion enumOp = switch (op) {
-            case '+' -> EnumOperacion.Suma;
-            case '-' -> EnumOperacion.Resta;
-            case '*' -> EnumOperacion.Multiplicacion;
-            case '/' -> EnumOperacion.Division;
-            default -> throw new IllegalArgumentException("Operador no soportado");
-        };
-        Operador operador = new Operador(enumOp);
-        ArbolAritmetico.Nodo<OperacionAritmetica> nodoOp = arbol.new Nodo<>(operador);
-        nodoOp.insertarHijo(izq);
-        nodoOp.insertarHijo(der);
-        return nodoOp;
-    }
+            int posicionInicio = this.posicion;
+            if ((caracterActual >= '0' && caracterActual <= '9') || caracterActual == '.') {
+                while ((caracterActual >= '0' && caracterActual <= '9') || caracterActual == '.') {
+                    avanzarCaracter();
+                }
 
-    private static boolean esOperador(char c) {
-        return c == '+' || c == '-' || c == '*' || c == '/';
-    }
+                double valor = Double.parseDouble(expresion.substring(posicionInicio, this.posicion));
+                return arbol.new Nodo<>(new Numero(valor));
+            }
 
-    private static int precedencia(char op) {
-        if (op == '+' || op == '-') return 1;
-        if (op == '*' || op == '/') return 2;
-        return -1;
+            throw new IllegalArgumentException("Sintaxis incorrecta cerca de la posición: " + posicionInicio);
+        }
+
+        // --- HERRAMIENTAS UTILITARIAS ---
+
+        private void avanzarCaracter() {
+            caracterActual = (++posicion < expresion.length()) ? expresion.charAt(posicion) : -1;
+        }
+
+        private boolean consumirCaracter(int caracterBuscado) {
+            while (caracterActual == ' ') {
+                avanzarCaracter(); // Ignora espacios en blanco dinámicamente
+            }
+            if (caracterActual == caracterBuscado) {
+                avanzarCaracter();
+                return true;
+            }
+            return false;
+        }
+
+        private ArbolAritmetico.Nodo<OperacionAritmetica> crearNodo(
+                EnumOperacion op,
+                ArbolAritmetico.Nodo<OperacionAritmetica> izq,
+                ArbolAritmetico.Nodo<OperacionAritmetica> der) {
+
+            ArbolAritmetico.Nodo<OperacionAritmetica> nodoOp = arbol.new Nodo<>(new Operador(op));
+            nodoOp.insertarHijo(izq); // La clase Nodo mantiene tu estructura original
+            nodoOp.insertarHijo(der);
+            return nodoOp;
+        }
     }
 }
