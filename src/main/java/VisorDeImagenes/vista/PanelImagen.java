@@ -1,45 +1,34 @@
 package VisorDeImagenes.vista;
 
-import VisorDeImagenes.modelo.ModeloImagen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 
-public class PanelImagen extends JPanel {
-    private static final Logger logger = LogManager.getLogger(PanelImagen.class);
-    private ModeloImagen modelo;
-
-    public PanelImagen() {
-        setBackground(new Color(45, 45, 45)); // Fondo gris oscuro profesional
-    }
-
-    public void setModelo(ModeloImagen modelo) {
-        this.modelo = modelo;
-        if (modelo != null) {
-            logger.debug("Repintando panel con imagen de {}x{}", modelo.getAncho(), modelo.getAlto());
-            setPreferredSize(new Dimension(modelo.getAncho(), modelo.getAlto()));
-        }
-        revalidate();
-        repaint();
-    }
+public class PanelImagen extends JPanel implements PropertyChangeListener {
+    private static final Logger logger = LogManager.getRootLogger();
+    private BufferedImage imagenVisible;
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        if (modelo == null) return;
-
-        BufferedImage bi = new BufferedImage(modelo.getAncho(), modelo.getAlto(), BufferedImage.TYPE_INT_ARGB);
-        for (int y = 0; y < modelo.getAlto(); y++) {
-            for (int x = 0; x < modelo.getAncho(); x++) {
-                bi.setRGB(x, y, modelo.getPixeles()[y][x]);
-            }
+        if (imagenVisible != null) {
+            int x = (getWidth() - imagenVisible.getWidth()) / 2;
+            int y = (getHeight() - imagenVisible.getHeight()) / 2;
+            g.drawImage(imagenVisible, x, y, this);
         }
+    }
 
-        int x = Math.max(0, (getWidth() - modelo.getAncho()) / 2);
-        int y = Math.max(0, (getHeight() - modelo.getAlto()) / 2);
-
-        g.drawImage(bi, x, y, null);
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+        if ("imagen".equals(evt.getPropertyName())) {
+            logger.info("Panel de imagen notificado del cambio en el modelo, repintando...");
+            this.imagenVisible = (BufferedImage) evt.getNewValue();
+            revalidate();
+            repaint();
+        }
     }
 }

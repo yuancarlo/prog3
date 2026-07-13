@@ -1,7 +1,7 @@
 package VisorDeImagenes.vista;
 
-import VisorDeImagenes.modelo.LectorImagen;
 import VisorDeImagenes.modelo.ModeloImagen;
+import VisorDeImagenes.utileria.LectorImagen;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import javax.swing.*;
@@ -9,89 +9,134 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 
 public class VentanaPrincipal extends JFrame {
-    private static final Logger logger = LogManager.getLogger(VentanaPrincipal.class);
+    private static final Logger logger = LogManager.getRootLogger();
+    private ModeloImagen modelo;
     private PanelImagen panelImagen;
 
-    private ModeloImagen modeloOriginal;
-    private ModeloImagen modeloActual;
-
     public VentanaPrincipal() {
-        logger.info("Iniciando Visor de Imágenes...");
-        setTitle("Visor De Imagen");
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(1000, 800);
-
+        modelo = new ModeloImagen();
         panelImagen = new PanelImagen();
-        add(new JScrollPane(panelImagen), BorderLayout.CENTER);
+        modelo.agregarObservador(panelImagen);
 
-        configurarMenus();
+        configurarVentana();
+        inicializarComponentes();
+    }
+
+    private void configurarVentana() {
+        setTitle("Visor y Cifrador de Imágenes");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(1024, 768);
         setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
     }
 
-    private void configurarMenus() {
-        JMenuBar mb = new JMenuBar();
-        JMenu mArchivo = new JMenu("Archivo");
+    private void inicializarComponentes() {
+        JMenuBar barraMenu = new JMenuBar();
+        JMenu menuArchivo = new JMenu("Cargar");
 
-        JMenuItem itemFile = new JMenuItem("Cargar Archivo...");
-        itemFile.addActionListener(e -> {
-            JFileChooser fc = new JFileChooser();
-            if (fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-                cargarNuevaImagen(fc.getSelectedFile().getAbsolutePath());
-            }
-        });
+        JMenuItem itemUrl = new JMenuItem("Desde URL");
+        JMenuItem itemLocal = new JMenuItem("Desde Archivo Local");
 
-        JMenuItem itemUrl = new JMenuItem("Cargar URL...");
-        itemUrl.addActionListener(e -> {
-            String url = JOptionPane.showInputDialog(this, "Introduce URL:");
-            if (url != null && !url.trim().isEmpty()) cargarNuevaImagen(url);
-        });
+        itemUrl.addActionListener(e -> cargarDesdeUrl());
+        itemLocal.addActionListener(e -> cargarDesdeArchivo());
 
-        mArchivo.add(itemFile); mArchivo.add(itemUrl);
+        menuArchivo.add(itemUrl);
+        menuArchivo.add(itemLocal);
+        barraMenu.add(menuArchivo);
 
-        JMenu mImagen = new JMenu("Imagen");
-        JMenuItem itemRedim = new JMenuItem("Redimensionar...");
-        itemRedim.addActionListener(e -> ejecutarRedimension());
+        JButton btnRedimensionar = new JButton("Redimensionar");
+        JButton btnCifrar = new JButton("Cifrar");
+        JButton btnDescifrar = new JButton("Descifrar");
 
-        mImagen.add(itemRedim);
-        mb.add(mArchivo); mb.add(mImagen);
-        setJMenuBar(mb);
+        btnRedimensionar.addActionListener(e -> mostrarDialogoRedimension());
+        btnCifrar.addActionListener(e -> accionarCifrado(true));
+        btnDescifrar.addActionListener(e -> accionarCifrado(false));
+
+        JPanel panelSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        panelSuperior.add(barraMenu);
+        panelSuperior.add(btnRedimensionar);
+        panelSuperior.add(btnCifrar);
+        panelSuperior.add(btnDescifrar);
+
+        add(panelSuperior, BorderLayout.NORTH);
+        add(new JScrollPane(panelImagen), BorderLayout.CENTER);
     }
 
-    private void cargarNuevaImagen(String ruta) {
-        logger.info("Intentando cargar: {}", ruta);
-        BufferedImage bi = LectorImagen.leerImagen(ruta);
-        if (bi != null) {
-            modeloOriginal = new ModeloImagen(bi);
-            modeloActual = modeloOriginal;
-            panelImagen.setModelo(modeloActual);
-            logger.info("Imagen cargada y establecida como Original.");
+    private void cargarDesdeUrl() {
+        String url = JOptionPane.showInputDialog(this, "Introduce la URL de la imagen:");
+        if (url != null && !url.trim().isEmpty()) {
+            cargarProcesarImagen(url);
+        }
+    }
+
+    private void cargarDesdeArchivo() {
+        JFileChooser selectorArchivo = new JFileChooser();
+        int resultado = selectorArchivo.showOpenDialog(this);
+        if (resultado == JFileChooser.APPROVE_OPTION) {
+            cargarProcesarImagen(selectorArchivo.getSelectedFile().getAbsolutePath());
+        }
+    }
+
+    private void cargarProcesarImagen(String ruta) {
+        BufferedImage imagenCargada = LectorImagen.leerImagen(ruta);
+        if (imagenCargada != null) {
+            modelo.cargarImagenBase(imagenCargada);
         } else {
-            logger.error("No se pudo cargar la imagen desde: {}", ruta);
+            JOptionPane.showMessageDialog(this, "Error al cargar la imagen", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void ejecutarRedimension() {
-        if (modeloOriginal == null) {
-            logger.warn("Intento de redimensión sin imagen cargada.");
-            return;
+    private void mostrarDialogoRedimension() {
+        if (modelo.obtenerImagenActual() == null) return;
+
+        JTextField txtAncho = new JTextField(String.valueOf(modelo.getAnchoActual()), 5);
+        JTextField txtAlto = new JTextField(String.valueOf(modelo.getAltoActual()), 5);
+        JCheckBox chkProporcion = new JCheckBox("Mantener Proporción");
+
+        JPanel panelFondo = new JPanel(new GridLayout(3, 2, 5, 5));
+        panelFondo.add(new JLabel("Nuevo Ancho:"));
+        panelFondo.add(txtAncho);
+        panelFondo.add(new JLabel("Nuevo Alto:"));
+        panelFondo.add(txtAlto);
+        panelFondo.add(new JLabel(""));
+        panelFondo.add(chkProporcion);
+
+        int confirmacion = JOptionPane.showConfirmDialog(this, panelFondo, "Redimensionar Imagen", JOptionPane.OK_CANCEL_OPTION);
+
+        if (confirmacion == JOptionPane.OK_OPTION) {
+            try {
+                int ancho = Integer.parseInt(txtAncho.getText());
+                int alto = Integer.parseInt(txtAlto.getText());
+                modelo.redimensionar(ancho, alto, chkProporcion.isSelected());
+            } catch (NumberFormatException ex) {
+                logger.error("Valores de dimensión inválidos", ex);
+                JOptionPane.showMessageDialog(this, "Por favor introduce números válidos.", "Entrada Inválida", JOptionPane.WARNING_MESSAGE);
+            }
         }
+    }
 
-        DialogoRedimensionar diag = new DialogoRedimensionar(this, modeloActual);
-        diag.setVisible(true);
+    private void accionarCifrado(boolean esCifrar) {
+        if (modelo.obtenerImagenActual() == null) return;
 
-        if (diag.isAceptado()) {
-            int nw = diag.getNuevoAncho();
-            int nh = diag.getNuevoAlto();
-
-            logger.info("Redimensionando de {}x{} a {}x{}", modeloActual.getAncho(), modeloActual.getAlto(), nw, nh);
-
-            modeloActual = modeloOriginal.redimensionar(nw, nh);
-
-            panelImagen.setModelo(modeloActual);
+        String clave = JOptionPane.showInputDialog(this, "Introduce la clave de cifrado:");
+        if (clave != null && !clave.trim().isEmpty()) {
+            if (esCifrar) {
+                modelo.cifrarImagen(clave);
+            } else {
+                modelo.descifrarImagen(clave);
+            }
         }
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new VentanaPrincipal().setVisible(true));
+        logger.info("Iniciando aplicación...");
+        SwingUtilities.invokeLater(() -> {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e) {
+                logger.warn("No se pudo cargar la interfaz nativa del SO", e);
+            }
+            new VentanaPrincipal().setVisible(true);
+        });
     }
 }
