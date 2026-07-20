@@ -47,16 +47,19 @@ public class VentanaPrincipal extends JFrame {
         JButton btnRedimensionar = new JButton("Redimensionar");
         JButton btnCifrar = new JButton("Cifrar");
         JButton btnDescifrar = new JButton("Descifrar");
+        JButton btnRestaurar = new JButton("Deshacer Cambios");
 
         btnRedimensionar.addActionListener(e -> mostrarDialogoRedimension());
         btnCifrar.addActionListener(e -> accionarCifrado(true));
         btnDescifrar.addActionListener(e -> accionarCifrado(false));
+        btnRestaurar.addActionListener(e -> modelo.restaurarImagenOriginal());
 
         JPanel panelSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT));
         panelSuperior.add(barraMenu);
         panelSuperior.add(btnRedimensionar);
         panelSuperior.add(btnCifrar);
         panelSuperior.add(btnDescifrar);
+        panelSuperior.add(btnRestaurar);
 
         add(panelSuperior, BorderLayout.NORTH);
         add(new JScrollPane(panelImagen), BorderLayout.CENTER);

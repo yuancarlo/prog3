@@ -69,6 +69,17 @@ public class ModeloImagen {
         }
     }
 
+    public void restaurarImagenOriginal() {
+        if (matrizOriginal != null) {
+            logger.info("Restaurando la imagen a su estado original");
+            // Sobreescribimos la matriz actual con una copia limpia de la original
+            this.matrizActual = copiarMatriz(this.matrizOriginal);
+            notificarCambio();
+        } else {
+            logger.warn("Se intentó restaurar la imagen, pero no hay ninguna imagen cargada.");
+        }
+    }
+
     public BufferedImage obtenerImagenActual() {
         if (matrizActual == null) return null;
         int alto = matrizActual.length;
